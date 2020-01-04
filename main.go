@@ -4,8 +4,10 @@ package main
 // github.com/vouch/vouch-proxy
 
 import (
+	"flag"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/vouch/vouch-proxy/handlers"
 	"github.com/vouch/vouch-proxy/pkg/cfg"
+	"github.com/vouch/vouch-proxy/pkg/model"
 	"github.com/vouch/vouch-proxy/pkg/timelog"
 	tran "github.com/vouch/vouch-proxy/pkg/transciever"
 )
@@ -44,6 +47,23 @@ func (fw *fwdToZapWriter) Write(p []byte) (n int, err error) {
 }
 
 func main() {
+	// as of go 1.13 flag.parse must be called from main
+	// https://github.com/golang/go/issues/31859
+	help := flag.Bool("help", false, "show usage")
+	flag.Parse()
+
+	if *help {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	cfg.Configure()
+
+	dbpath := filepath.Join(cfg.RootDir, cfg.Cfg.DB.File)
+	if err := model.OpenDB(dbpath); err != nil {
+		logger.Fatalf("can't open Dbfile %s %v", dbpath, err)
+	}
+
 	var listen = cfg.Cfg.Listen + ":" + strconv.Itoa(cfg.Cfg.Port)
 	logger.Infow("starting "+cfg.Branding.CcName,
 		// "semver":    semver,

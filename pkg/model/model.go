@@ -6,7 +6,6 @@ package model
 import (
 	"errors"
 	"flag"
-	"path/filepath"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -30,22 +29,18 @@ var (
 	userBucket = []byte("users")
 	teamBucket = []byte("teams")
 	siteBucket = []byte("sites")
-	dbpath     = filepath.Join(cfg.RootDir, cfg.Cfg.DB.File)
 
 	log = cfg.Cfg.Logger
 )
 
 // may want to use encode/gob to store the user record
-func init() {
-	// in testing we open the dbfile from _test.go explicitly
-	if flag.Lookup("test.v") != nil {
-		return
-	}
-	Db, _ = OpenDB(dbpath)
-}
 
 // OpenDB the boltdb
-func OpenDB(dbfile string) (*bolt.DB, error) {
+func OpenDB(dbfile string) error {
+	// in testing we open the dbfile from _test.go explicitly
+	if flag.Lookup("test.v") != nil {
+		return nil
+	}
 
 	log.Debugf("opening dbfile %s", dbfile)
 
@@ -56,9 +51,11 @@ func OpenDB(dbfile string) (*bolt.DB, error) {
 	db, err := bolt.Open(dbfile, 0644, opts)
 	if err != nil {
 		log.Panicf("unable to open dbfile %s: %s", dbfile, err.Error())
-		return nil, err
+		return err
 	}
-	return db, nil
+
+	Db = db
+	return nil
 
 }
 
@@ -66,7 +63,7 @@ func getBucket(tx *bolt.Tx, key []byte) *bolt.Bucket {
 	b, err := tx.CreateBucketIfNotExists(key)
 	if err != nil {
 		log.Errorf("could not create bucket in db %s", err)
-		log.Errorf("check the dbfile permissions at %s", dbpath)
+		log.Errorf("check the dbfile permissions")
 		log.Errorf("if there's really something wrong with the data ./do.sh includes a utility to browse the dbfile")
 		return nil
 	}

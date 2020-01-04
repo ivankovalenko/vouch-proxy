@@ -1,14 +1,10 @@
 package model
 
-// modeled after
-// https://www.opsdash.com/blog/persistent-key-value-store-golang.html
-
 import (
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"github.com/vouch/vouch-proxy/pkg/cfg"
 	"github.com/vouch/vouch-proxy/pkg/structs"
 )
@@ -17,13 +13,13 @@ var testdb = "/tmp/storage-test.db"
 
 func init() {
 	cfg.InitForTestPurposes()
-
-	Db, _ = OpenDB(testdb)
 }
 
 func TestPutUserGetUser(t *testing.T) {
 	os.Remove(testdb)
-	Db, _ = OpenDB(testdb)
+	if err := OpenDB(testdb); err != nil {
+		log.Fatal("can't open testdb %s", testdb)
+	}
 
 	u1 := structs.User{
 		Username: "test@testing.com",

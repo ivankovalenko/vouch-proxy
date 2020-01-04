@@ -159,21 +159,14 @@ func init() {
 	atom = zap.NewAtomicLevel()
 	encoderCfg := zap.NewProductionEncoderConfig()
 
-	logger = zap.New(zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderCfg),
-		zapcore.Lock(os.Stdout),
-		atom,
-	))
-
-	defer logger.Sync() // flushes buffer, if any
-	log = logger.Sugar()
-	Cfg.FastLogger = logger
-	Cfg.Logger = log
-
 	// Handle -healthcheck argument
-	healthCheck := flag.Bool("healthcheck", false, "invoke healthcheck (check process return value)")
-	// can pass loglevel on the command line
-	ll := flag.String("loglevel", "", "enable debug log output")
+	// healthCheck := flag.BoolVar("healthcheck", false, "invoke healthcheck (check process return value)")
+	flag.BoolVar(&FlagCfg.HealthCheck, "healthcheck", false, "invoke healthcheck (check process return value)")
+
+	// command line args
+	flag.StringVar(&FlagCfg.LogLevel, "loglevel", "", "set log level as one of 'debug','info','warn','error'")
+	flag.IntVar(&FlagCfg.Port, "port", -1, "port")
+
 	// from config file
 	port := flag.Int("port", -1, "port")
 	help := flag.Bool("help", false, "show usage")
@@ -194,6 +187,11 @@ func init() {
 	}
 	secretFile = filepath.Join(RootDir, "config/secret")
 
+}
+
+// Configure all the things, called from main.go
+func Configure() {
+
 	// bail if we're testing
 	if flag.Lookup("test.v") != nil {
 		fmt.Println("`go test` detected, not loading regular config")
@@ -202,16 +200,12 @@ func init() {
 
 	ParseConfig()
 
-	if Cfg.Testing {
-		setDevelopmentLogger()
+	// transfer commandline flags
+	if FlagCfg.Port != -1 {
+		Cfg.Port = FlagCfg.Port
 	}
-
-	if *ll == "debug" || Cfg.LogLevel == "debug" {
-		atom.SetLevel(zap.DebugLevel)
-		log.Debug("logLevel set to debug")
-	} else if *healthCheck {
-		// just errors for healthcheck, unless debug is set
-		atom.SetLevel(zap.ErrorLevel)
+	if FlagCfg.LogLevel != "" {
+		Cfg.LogLevel = FlagCfg.LogLevel
 	}
 
 	if *help {
@@ -459,16 +453,18 @@ func SetDefaults() {
 	// viper.SetDefault("Cookie.Name", "Vouch")
 
 	// logging
-	if !viper.IsSet(Branding.LCName + ".logLevel") {
+	if Cfg.LogLevel == "" && !viper.IsSet(Branding.LCName+".logLevel") {
 		Cfg.LogLevel = "info"
 	}
 	// network defaults
-	if !viper.IsSet(Branding.LCName + ".listen") {
+	if Cfg.Listen == "" && !viper.IsSet(Branding.LCName+".listen") {
 		Cfg.Listen = "0.0.0.0"
 	}
-	if !viper.IsSet(Branding.LCName + ".port") {
+
+	if Cfg.Port == 0 && !viper.IsSet(Branding.LCName+".port") {
 		Cfg.Port = 9090
 	}
+
 	if !viper.IsSet(Branding.LCName + ".allowAllUsers") {
 		Cfg.AllowAllUsers = false
 	}
