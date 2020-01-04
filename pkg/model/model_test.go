@@ -13,13 +13,13 @@ var testdb = "/tmp/storage-test.db"
 
 func init() {
 	cfg.InitForTestPurposes()
-}
-
-func TestPutUserGetUser(t *testing.T) {
 	os.Remove(testdb)
 	if err := OpenDB(testdb); err != nil {
 		log.Fatal("can't open testdb %s", testdb)
 	}
+}
+
+func TestPutUserGetUser(t *testing.T) {
 
 	u1 := structs.User{
 		Username: "test@testing.com",
@@ -52,8 +52,6 @@ func TestPutUserGetUser(t *testing.T) {
 }
 
 func TestPutSiteGetSite(t *testing.T) {
-	os.Remove(testdb)
-	Db, _ = OpenDB(testdb)
 
 	s1 := structs.Site{Domain: "test.bnf.net"}
 	s2 := &structs.Site{}
@@ -67,8 +65,6 @@ func TestPutSiteGetSite(t *testing.T) {
 }
 
 func TestPutTeamGetTeamDeleteTeam(t *testing.T) {
-	os.Remove(testdb)
-	Db, _ = OpenDB(testdb)
 
 	t1 := structs.Team{Name: "testteam1"}
 	t2 := &structs.Team{}
