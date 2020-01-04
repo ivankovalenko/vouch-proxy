@@ -20,7 +20,6 @@ import (
 	"github.com/spf13/viper"
 	securerandom "github.com/theckman/go-securerandom"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // config vouch jwt cookie configuration
@@ -112,6 +111,8 @@ var (
 
 	// Cfg the main exported config variable
 	Cfg config
+	// FlagCfg captures commandline items
+	FlagCfg config
 
 	// GenOAuth exported OAuth config variable
 	// TODO: I think GenOAuth and OAuthConfig can be combined!
@@ -143,9 +144,6 @@ var (
 
 	secretFile    string
 	cmdLineConfig *string
-	logger        *zap.Logger
-	log           *zap.SugaredLogger
-	atom          zap.AtomicLevel
 )
 
 const (
@@ -156,8 +154,7 @@ const (
 
 func init() {
 
-	atom = zap.NewAtomicLevel()
-	encoderCfg := zap.NewProductionEncoderConfig()
+	initLogger()
 
 	// Handle -healthcheck argument
 	// healthCheck := flag.BoolVar("healthcheck", false, "invoke healthcheck (check process return value)")
@@ -168,10 +165,7 @@ func init() {
 	flag.IntVar(&FlagCfg.Port, "port", -1, "port")
 
 	// from config file
-	port := flag.Int("port", -1, "port")
-	help := flag.Bool("help", false, "show usage")
 	cmdLineConfig = flag.String("config", "", "specify alternate .yml file as command line arg")
-	flag.Parse()
 
 	// set RootDir from VOUCH_ROOT env var, or to the executable's directory
 	if os.Getenv(Branding.UCName+"_ROOT") != "" {
@@ -208,16 +202,9 @@ func Configure() {
 		Cfg.LogLevel = FlagCfg.LogLevel
 	}
 
-	if *help {
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
+	configureLogger()
 
 	SetDefaults()
-
-	if *port != -1 {
-		Cfg.Port = *port
-	}
 
 	errT := BasicTest()
 	if errT != nil {
@@ -225,25 +212,8 @@ func Configure() {
 		panic(errT)
 	}
 
-	if *healthCheck {
-		url := fmt.Sprintf("http://%s:%d/healthcheck", Cfg.Listen, Cfg.Port)
-		log.Debug("Invoking healthcheck on URL ", url)
-		resp, err := http.Get(url)
-		if err == nil {
-			robots, err := ioutil.ReadAll(resp.Body)
-			resp.Body.Close()
-			if err == nil {
-				var result map[string]interface{}
-				jsonErr := json.Unmarshal(robots, &result)
-				if jsonErr == nil {
-					if result["ok"] == true {
-						os.Exit(0)
-					}
-				}
-			}
-		}
-		log.Error("Healthcheck against ", url, " failed.")
-		os.Exit(1)
+	if Cfg.HealthCheck {
+		DoHealthcheckAndExit()
 	}
 
 	var listen = Cfg.Listen + ":" + strconv.Itoa(Cfg.Port)
@@ -252,19 +222,30 @@ func Configure() {
 	}
 
 	log.Debugf("viper settings %+v", viper.AllSettings())
+
 }
 
-func setDevelopmentLogger() {
-	// then configure the logger for development output
-	logger = logger.WithOptions(
-		zap.WrapCore(
-			func(zapcore.Core) zapcore.Core {
-				return zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), zapcore.AddSync(os.Stderr), atom)
-			}))
-	log = logger.Sugar()
-	Cfg.FastLogger = log.Desugar()
-	Cfg.Logger = log
-	log.Infof("testing: %s, using development console logger", strconv.FormatBool(Cfg.Testing))
+// DoHealthcheckAndExit send request to http://0.0.0.0:6090/healthcheck (which does work)
+func DoHealthcheckAndExit() {
+	url := fmt.Sprintf("http://%s:%d/healthcheck", Cfg.Listen, Cfg.Port)
+	log.Debug("Invoking healthcheck on URL ", url)
+	resp, err := http.Get(url)
+	if err == nil {
+		robots, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err == nil {
+			var result map[string]interface{}
+			jsonErr := json.Unmarshal(robots, &result)
+			if jsonErr == nil {
+				if result["ok"] == true {
+					os.Exit(0)
+				}
+			}
+		}
+	}
+	log.Error("Healthcheck against ", url, " failed.")
+	os.Exit(1)
+
 }
 
 // InitForTestPurposes is called by most *_testing.go files in Vouch Proxy
