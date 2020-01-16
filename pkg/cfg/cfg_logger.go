@@ -43,6 +43,7 @@ func setLoglevel() {
 	switch strings.ToLower(Cfg.LogLevel) {
 	case "debug":
 		atom.SetLevel(zap.DebugLevel)
+		log.Debugf("logLevel set to %s", zap.DebugLevel)
 	case "info":
 		atom.SetLevel(zap.InfoLevel)
 	case "warn":

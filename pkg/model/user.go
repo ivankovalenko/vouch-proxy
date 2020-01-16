@@ -19,7 +19,7 @@ func PutUser(u structs.User) error {
 		if err == nil {
 			userexists = true
 		} else {
-			log.Errorw("PutUser userexists lookup error",
+			log.Warnw("PutUser userexists lookup error",
 				"error", err.Error(),
 				"userexists", userexists,
 				"u", u,

@@ -256,6 +256,7 @@ func InitForTestPurposes() {
 	// log.Debug("opening config")
 	setDevelopmentLogger()
 	ParseConfig()
+	setLoglevel()
 	SetDefaults()
 
 }
