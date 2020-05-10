@@ -18,6 +18,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/yandex"
 )
 
 func oauthBasicTest() error {
@@ -27,6 +28,7 @@ func oauthBasicTest() error {
 		GenOAuth.Provider != Providers.HomeAssistant &&
 		GenOAuth.Provider != Providers.ADFS &&
 		GenOAuth.Provider != Providers.OIDC &&
+		GenOAuth.Provider != Providers.Yandex &&
 		GenOAuth.Provider != Providers.OpenStax &&
 		GenOAuth.Provider != Providers.Nextcloud {
 		return errors.New("configuration error: Unkown oauth provider: " + GenOAuth.Provider)
@@ -73,9 +75,26 @@ func setProviderDefaults() {
 	} else if GenOAuth.Provider == Providers.ADFS {
 		setDefaultsADFS()
 		configureOAuthClient()
-	} else {
-		// IndieAuth, OIDC, OpenStax, Nextcloud
+	} else if GenOAuth.Provider == Providers.YandexS {
+		setDefaultsYandex()
 		configureOAuthClient()
+	} else {
+		// IndieAuth, OIDC, OpenStax, Nextcloud, Yandex
+		configureOAuthClient()
+	}
+}
+
+func setDefaultsYandex() {
+	log.Info("configuring Yandex")
+	GenOAuth.UserInfoURL = "https://login.yandex.ru/info"
+	if len(GenOAuth.Scopes) == 0 {
+		GenOAuth.Scopes = []string{"login:email","login:info"}
+	}
+	OAuthClient = &oauth2.Config{
+		ClientID:     GenOAuth.ClientID,
+		ClientSecret: GenOAuth.ClientSecret,
+		Scopes:       GenOAuth.Scopes,
+		Endpoint:     yandex.Endpoint,
 	}
 }
 

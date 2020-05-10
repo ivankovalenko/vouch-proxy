@@ -161,6 +161,16 @@ func (u *NextcloudUser) PrepareUserData() {
 	}
 }
 
+// Yandex User has email in unusual place
+type YandexUser struct {
+	User
+	DefaultEmail      string `json:"default_email" mapstructure:"email"`
+}
+
+func (u *YandexUser) PrepareUserData() {
+	u.Email = u.DefaultEmail
+}
+
 // Team has members and provides acess to sites
 type Team struct {
 	Name       string   `json:"name" mapstructure:"name"`

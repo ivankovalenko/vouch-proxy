@@ -95,6 +95,7 @@ type oauthConfig struct {
 // OAuthProviders holds the stings for
 type OAuthProviders struct {
 	Google        string
+	Yandex	      string
 	GitHub        string
 	IndieAuth     string
 	ADFS          string
@@ -131,6 +132,7 @@ var (
 	// Providers static strings to test against
 	Providers = &OAuthProviders{
 		Google:        "google",
+		Yandex:        "yandex",
 		GitHub:        "github",
 		IndieAuth:     "indieauth",
 		ADFS:          "adfs",

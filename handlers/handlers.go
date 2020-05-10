@@ -24,6 +24,7 @@ import (
 	"github.com/vouch/vouch-proxy/handlers/nextcloud"
 	"github.com/vouch/vouch-proxy/handlers/openid"
 	"github.com/vouch/vouch-proxy/handlers/openstax"
+	"github.com/vouch/vouch-proxy/handlers/yandex"
 
 	"go.uber.org/zap"
 
@@ -91,6 +92,8 @@ func getProvider() Provider {
 		return github.Provider{PrepareTokensAndClient: common.PrepareTokensAndClient}
 	case cfg.Providers.Nextcloud:
 		return nextcloud.Provider{}
+	case cfg.Providers.Yandex:
+		return yandex.Provider{}
 	case cfg.Providers.OIDC:
 		return openid.Provider{}
 	default:
